@@ -171,17 +171,51 @@ const handleMovieList = async (req, res, url) => {
   }
 }
 
+const handleUserProfile = async (req, res, url) => {
+  logRequest(req, url)
+
+  const authenticatedUser = verifyToken(req)
+
+  if (!authenticatedUser) {
+    sendJson(res, 401, { message: 'Authentication required.' })
+    return
+  }
+
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, role FROM users WHERE id = $1',
+      [authenticatedUser.userId]
+    )
+
+    if (result.rows.length === 0) {
+      sendJson(res, 404, { message: 'User profile not found.' })
+      return
+    }
+
+    sendJson(res, 200, { user: result.rows[0] })
+  } catch (error) {
+    console.error('Profile error:', error)
+    sendJson(res, 500, { message: 'Failed to load profile.' })
+  }
+}
+
 export async function handleUserRoutes(req, res, url) {
+  if (req.method === 'GET' && url.pathname === '/api/profile') {
+    await handleUserProfile(req, res, url)
+    return true
+  }
+
+  // User Endpoint to fetch and show selected movie details
   if (req.method === 'GET' && /^\/api\/movies\/\d+$/.test(url.pathname)) {
     await handleMovieDetails(req, res, url)
     return true
   }
-
+  // User Endpoint to submit user's movie review
   if (req.method === 'POST' && /^\/api\/movies\/\d+\/reviews$/.test(url.pathname)) {
     handleReviewSubmission(req, res, url)
     return true
   }
-
+  // User Endpoint to fetch and display movies list to user
   if (req.method === 'GET' && url.pathname === '/api/movies') {
     await handleMovieList(req, res, url)
     return true
