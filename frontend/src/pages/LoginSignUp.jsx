@@ -51,6 +51,7 @@ function LoginSignup() {
         }
 
         localStorage.setItem('accessToken', data.accessToken) // accessToken set in localStorage
+        localStorage.setItem('currentUser', JSON.stringify(data.user))
         // No need to do it for refreshToken, as it's stored automatically by browser as HTTP-only cookie
         // you can't see HTTP-Only cookie in inspect mode on browser as well. 
         setSuccessMessage(data.message)

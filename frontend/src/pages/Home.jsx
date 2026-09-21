@@ -13,7 +13,9 @@ function Home() {
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const scrollPositionRef = useRef(null)
+  const profileMenuRef = useRef(null)
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -25,6 +27,17 @@ function Home() {
     scrollPositionRef.current = window.scrollY
     setPage((current) => current + direction)
   }
+
+  useEffect(() => {
+    const closeProfileMenu = (event) => {
+      if (!profileMenuRef.current?.contains(event.target)) {
+        setIsProfileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', closeProfileMenu)
+    return () => document.removeEventListener('mousedown', closeProfileMenu)
+  }, [])
 
   useLayoutEffect(() => {
     if (scrollPositionRef.current !== null) {
@@ -87,9 +100,28 @@ function Home() {
           </div>
           <div className="movies-header-actions">
             <span className="movies-count">10 per page</span>
-            <button className="logout-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>
-              {isLoggingOut ? 'Logging out...' : 'Log out'}
-            </button>
+            <div className="profile-menu" ref={profileMenuRef}>
+              <button
+                className="profile-button"
+                type="button"
+                aria-expanded={isProfileMenuOpen}
+                aria-haspopup="menu"
+                aria-label="Open profile menu"
+                onClick={() => setIsProfileMenuOpen((isOpen) => !isOpen)}
+              >
+                <span className="profile-icon" aria-hidden="true">&#128100;</span>
+              </button>
+              {isProfileMenuOpen && (
+                <div className="profile-dropdown" role="menu">
+                  <button type="button" role="menuitem" onClick={() => navigate('/profile')}>
+                    View Profile
+                  </button>
+                  <button type="button" role="menuitem" onClick={handleLogout} disabled={isLoggingOut}>
+                    {isLoggingOut ? 'Logging out...' : 'Log Out'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

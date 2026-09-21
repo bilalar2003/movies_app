@@ -23,6 +23,19 @@ export async function logout() {
   })
 
   localStorage.removeItem('accessToken')
+  localStorage.removeItem('currentUser')
+}
+
+export async function fetchProfile() {
+  const response = await fetchProtected('/api/profile')
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to load profile')
+  }
+
+  localStorage.setItem('currentUser', JSON.stringify(data.user))
+  return data.user
 }
 
 
