@@ -34,8 +34,21 @@ export async function fetchProfile() {
     throw new Error(data.message || 'Failed to load profile')
   }
 
-  localStorage.setItem('currentUser', JSON.stringify(data.user))
-  return data.user
+    localStorage.setItem('currentUser', JSON.stringify(data.user))
+    return data
+  }
+
+  export async function updateFavorite(movieId, isFavorite) {
+    const response = await fetchProtected(`/api/favorites/${movieId}`, {
+      method: isFavorite ? 'PUT' : 'DELETE',
+    })
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update favorite')
+    }
+
+    return data.isFavorite
 }
 
 

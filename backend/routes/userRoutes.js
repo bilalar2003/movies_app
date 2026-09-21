@@ -153,8 +153,15 @@ const handleMovieList = async (req, res, url) => {
       ? 0
       : firstPageLimit + (currentPage - 2) * laterPageLimit
     const moviesResult = await pool.query(
-      'SELECT id, title, description, genre, rating, release_year FROM movies ORDER BY id LIMIT $1 OFFSET $2',
-      [limit, offset]
+      `SELECT movies.id, movies.title, movies.description, movies.genre, movies.rating, movies.release_year,
+        EXISTS (
+          SELECT 1 FROM favorites
+          WHERE favorites.movie_id = movies.id AND favorites.user_id = $1
+        ) AS is_favorite
+       FROM movies
+       ORDER BY movies.id
+       LIMIT $2 OFFSET $3`,
+      [authenticatedUser.userId, limit, offset]
     )
 
     sendJson(res, 200, {
@@ -168,6 +175,48 @@ const handleMovieList = async (req, res, url) => {
   } catch (error) {
     console.error('Movies error:', error)
     sendJson(res, 500, { message: 'Failed to load movies.' })
+  }
+}
+
+const handleFavoriteToggle = async (req, res, url, shouldFavorite) => {
+  logRequest(req, url)
+
+  const authenticatedUser = verifyToken(req)
+
+  if (!authenticatedUser) {
+    sendJson(res, 401, { message: 'Authentication required.' })
+    return
+  }
+
+  if (authenticatedUser.role !== 'user') {
+    sendJson(res, 403, { message: 'Only users can manage favorites.' })
+    return
+  }
+
+  const movieId = Number.parseInt(url.pathname.split('/').pop(), 10)
+
+  try {
+    if (shouldFavorite) {
+      await pool.query(
+        'INSERT INTO favorites (user_id, movie_id) VALUES ($1, $2) ON CONFLICT (user_id, movie_id) DO NOTHING',
+        [authenticatedUser.userId, movieId]
+      )
+    } else {
+      await pool.query(
+        'DELETE FROM favorites WHERE user_id = $1 AND movie_id = $2',
+        [authenticatedUser.userId, movieId]
+      )
+    }
+
+    sendJson(res, 200, { isFavorite: shouldFavorite })
+  } catch (error) {
+    if (error?.code === '23503') {
+      sendJson(res, 404, { message: 'Movie not found.' })
+      return
+    }
+
+    console.error('Favorite update error:', error)
+    sendJson(res, 500, { message: 'Failed to update favorite.' })
   }
 }
 
@@ -192,7 +241,17 @@ const handleUserProfile = async (req, res, url) => {
       return
     }
 
-    sendJson(res, 200, { user: result.rows[0] })
+    const favoritesResult = await pool.query(
+      `SELECT movies.id, movies.title, movies.description, movies.genre, movies.rating, movies.release_year,
+        TRUE AS is_favorite
+       FROM favorites
+       INNER JOIN movies ON movies.id = favorites.movie_id
+       WHERE favorites.user_id = $1
+       ORDER BY favorites.id DESC`,
+      [authenticatedUser.userId]
+    )
+
+    sendJson(res, 200, { user: result.rows[0], favorites: favoritesResult.rows })
   } catch (error) {
     console.error('Profile error:', error)
     sendJson(res, 500, { message: 'Failed to load profile.' })
@@ -202,6 +261,16 @@ const handleUserProfile = async (req, res, url) => {
 export async function handleUserRoutes(req, res, url) {
   if (req.method === 'GET' && url.pathname === '/api/profile') {
     await handleUserProfile(req, res, url)
+    return true
+  }
+
+  if (req.method === 'PUT' && /^\/api\/favorites\/\d+$/.test(url.pathname)) {
+    await handleFavoriteToggle(req, res, url, true)
+    return true
+  }
+
+  if (req.method === 'DELETE' && /^\/api\/favorites\/\d+$/.test(url.pathname)) {
+    await handleFavoriteToggle(req, res, url, false)
     return true
   }
 
