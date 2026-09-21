@@ -42,7 +42,7 @@ const server = http.createServer(async (req, res) => {
   // to allow cross-origin requests (CORS) and handle preflight requests
   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173'); // requests only from the url will be entertained
   res.setHeader('Access-Control-Allow-Credentials', 'true'); // tells browser to allow credentials like cookies to be included in requests
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS'); // the HTTP methods client can include in their requests
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS'); // the HTTP methods client can include in its requests
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // allows client to send content-type and authorization headers in their requests
 
   if (method === 'OPTIONS') {

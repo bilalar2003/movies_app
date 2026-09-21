@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchProtected, logout } from '../services/api'
+import { fetchProtected, logout, updateFavorite } from '../services/api'
 import '../App.css'
 
 function Home() {
@@ -14,6 +14,7 @@ function Home() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const [updatingFavoriteId, setUpdatingFavoriteId] = useState(null)
   const scrollPositionRef = useRef(null)
   const profileMenuRef = useRef(null)
 
@@ -26,6 +27,33 @@ function Home() {
   const changePage = (direction) => {
     scrollPositionRef.current = window.scrollY
     setPage((current) => current + direction)
+  }
+
+  const handleFavoriteToggle = async (event, movie) => {
+    event.stopPropagation()
+
+    if (updatingFavoriteId === movie.id) {
+      return
+    }
+
+    setUpdatingFavoriteId(movie.id)
+    setErrorMessage('')
+
+    try {
+      const isFavorite = await updateFavorite(movie.id, !movie.is_favorite)
+      setMovies((currentMovies) => currentMovies.map((currentMovie) => (
+        currentMovie.id === movie.id
+          ? { ...currentMovie, is_favorite: isFavorite }
+          : currentMovie
+      )))
+    } catch (error) {
+      setErrorMessage(error.message)
+      if (error.message === 'Session expired') {
+        navigate('/', { replace: true })
+      }
+    } finally {
+      setUpdatingFavoriteId(null)
+    }
   }
 
   useEffect(() => {
@@ -132,7 +160,19 @@ function Home() {
           <>
             <div className="movie-list" aria-label="Movie list">
               {movies.map((movie, index) => (
-                <a className="movie-row" href={`/movies/${movie.id}`} key={movie.id}>
+                <div
+                  className="movie-row"
+                  key={movie.id}
+                  role="link"
+                  tabIndex="0"
+                  onClick={() => navigate(`/movies/${movie.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      navigate(`/movies/${movie.id}`)
+                    }
+                  }}
+                >
                   <span className="movie-number">{String(pageOffset + index + 1).padStart(2, '0')}</span>
                   <span className="movie-main">
                     <strong>{movie.title}</strong>
@@ -143,7 +183,17 @@ function Home() {
                     <span>{movie.release_year}</span>
                     <span className="movie-rating">{Number(movie.rating).toFixed(1)}</span>
                   </span>
-                </a>
+                  <button
+                    className={movie.is_favorite ? 'favorite-button favorite-button-active' : 'favorite-button'}
+                    type="button"
+                    aria-label={movie.is_favorite ? `Remove ${movie.title} from favorites` : `Add ${movie.title} to favorites`}
+                    aria-pressed={movie.is_favorite}
+                    disabled={updatingFavoriteId === movie.id}
+                    onClick={(event) => handleFavoriteToggle(event, movie)}
+                  >
+                    <span aria-hidden="true">{movie.is_favorite ? '\u2665' : '\u2661'}</span>
+                  </button>
+                </div>
               ))}
             </div>
 
