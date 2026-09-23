@@ -251,7 +251,21 @@ const handleUserProfile = async (req, res, url) => {
       [authenticatedUser.userId]
     )
 
-    sendJson(res, 200, { user: result.rows[0], favorites: favoritesResult.rows })
+    const reviewsResult = await pool.query(
+      `SELECT mr.id AS review_id, mr.rating AS user_rating, mr.review,
+        m.id, m.title, m.description, m.genre, m.rating AS movie_rating, m.release_year
+       FROM movie_reviews mr
+       INNER JOIN movies m ON m.id = mr.movie_id
+       WHERE mr.user_id = $1
+       ORDER BY mr.id DESC`,
+      [authenticatedUser.userId]
+    )
+
+    sendJson(res, 200, {
+      user: result.rows[0],
+      favorites: favoritesResult.rows,
+      reviews: reviewsResult.rows,
+    })
   } catch (error) {
     console.error('Profile error:', error)
     sendJson(res, 500, { message: 'Failed to load profile.' })
