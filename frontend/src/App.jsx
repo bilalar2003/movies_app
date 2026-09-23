@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import LoginSignup from './pages/LoginSignUp'
 import Home from './pages/Home'
+import AdminHome from './pages/AdminHome'
 import Movie from './pages/Movie'
 import UserProfile from './pages/UserProfile'
 
@@ -10,6 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginSignup />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/admin-home" element={<AdminHome />} />
         <Route path="/movies/:id" element={<Movie />} />
         <Route path="/profile" element={<UserProfile />} />
       </Routes>

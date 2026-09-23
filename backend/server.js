@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import chalk from 'chalk'
 import { handleUserRoutes } from './routes/userRoutes.js'
+import { handleSharedRoutes } from './routes/sharedRoutes.js'
+import { handleAdminRoutes } from './routes/adminRoutes.js'
 
 dotenv.config();
 
@@ -272,7 +274,15 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (await handleAdminRoutes(req, res, url)) {
+    return;
+  }
+
   if (await handleUserRoutes(req, res, url)) { // this is the router for user-specific endpoints
+    return;
+  }
+
+  if (await handleSharedRoutes(req, res, url)) {
     return;
   }
 

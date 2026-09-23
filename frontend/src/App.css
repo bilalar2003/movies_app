@@ -165,6 +165,29 @@
   animation: movies-enter 0.65s ease both;
 }
 
+.admin-page {
+  background: #0b0b0b;
+}
+
+.admin-header {
+  border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+.admin-section {
+  margin-top: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.logout-button {
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: #111111;
+  color: #f8fafc;
+  cursor: pointer;
+}
+
 .movies-shell {
   width: min(100%, 1100px);
   margin: 0 auto;
