@@ -56,7 +56,7 @@ function LoginSignup() {
         // you can't see HTTP-Only cookie in inspect mode on browser as well. 
         setSuccessMessage(data.message)
         setForm(initialForm)
-        navigate('/home') // Redirect to home page upon successful login of user. 
+        navigate(data.user.role === 'admin' ? '/admin-home' : '/home')
       } catch (error) {
         setErrorMessage(error.message)
       }
