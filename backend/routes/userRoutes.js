@@ -59,7 +59,19 @@ const handleMovieDetails = async (req, res, url) => {
       return
     }
 
-    sendJson(res, 200, { movie: result.rows[0] })
+    const reviewsResult = await pool.query(
+      `SELECT mr.id AS review_id, mr.rating AS user_rating, mr.review, u.name AS user_name
+       FROM movie_reviews mr
+       INNER JOIN users u ON u.id = mr.user_id
+       WHERE mr.movie_id = $1
+       ORDER BY mr.id DESC`,
+      [movieId]
+    )
+
+    sendJson(res, 200, {
+      movie: result.rows[0],
+      reviews: reviewsResult.rows,
+    })
   } catch (error) {
     console.error('Movie details error:', error)
     sendJson(res, 500, { message: 'Failed to load movie details.' })

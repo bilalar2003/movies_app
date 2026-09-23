@@ -7,6 +7,7 @@ function Movie() {
     const { id } = useParams()
     const navigate = useNavigate()
     const [movie, setMovie] = useState(null)
+    const [reviews, setReviews] = useState([])
     const [loading, setLoading] = useState(true)
     const [errorMessage, setErrorMessage] = useState('')
     const [rating, setRating] = useState(0)
@@ -43,6 +44,7 @@ function Movie() {
 
                 if (isCurrent) {
                     setMovie(data.movie || data)
+                    setReviews(data.reviews || [])
                 }
             } catch (error) {
                 if (isCurrent) {
@@ -189,9 +191,34 @@ function Movie() {
                                         {isSubmittingReview ? 'Submitting...' : 'Submit review'}
                                     </button>
                                 </form>
-
                             </section>
                         </div>
+
+                        <section className="profile-favorites" aria-labelledby="movie-reviews-heading">
+                            <div className="profile-section-heading">
+                                <div>
+                                    <p className="movie-panel-label">AUDIENCE REVIEWS</p>
+                                    <h2 id="movie-reviews-heading">Movie reviews</h2>
+                                </div>
+                                <span>{reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</span>
+                            </div>
+
+                            {reviews.length === 0 ? (
+                                <p className="movies-state profile-empty-state">No reviews yet for this movie.</p>
+                            ) : (
+                                <div className="movie-list" aria-label="Movie reviews">
+                                    {reviews.map((reviewItem) => (
+                                        <div className="movie-row" key={reviewItem.review_id}>
+                                            <span className="movie-number review-rating">{reviewItem.user_rating}/5</span>
+                                            <span className="movie-main">
+                                                <strong>{reviewItem.user_name}</strong>
+                                                <span>{reviewItem.review}</span>
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
                     </div>
                 )}
             </section>
