@@ -473,6 +473,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.review-rating {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
 .movie-main,
 .movie-meta {
   display: flex;
