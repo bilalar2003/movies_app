@@ -74,14 +74,14 @@ function Home() {
     }
   }, [movies])
 
-  useEffect(() => {
+  useEffect(() => { // this useEffect() runs when Home.jsx page is accessed.
     let isCurrent = true
 
     const loadMovies = async () => {
       setLoading(true)
       setErrorMessage('')
 
-      try {
+      try { // this page in turn calls fetchProtected API for retreiving the movies list
         const response = await fetchProtected(`/api/movies?page=${page}`)
         const data = await response.json()
 

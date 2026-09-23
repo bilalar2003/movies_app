@@ -123,18 +123,18 @@ const handleReviewSubmission = (req, res, url) => {
 }
 
 const handleMovieList = async (req, res, url) => {
-  logRequest(req, url)
+  logRequest(req, url) // log the API to console
 
-  const authenticatedUser = verifyToken(req)
+  const authenticatedUser = verifyToken(req) // Verify the accessToken sent with the API call
 
   if (!authenticatedUser) {
     sendJson(res, 401, { message: 'Authentication required.' })
     return
   }
 
-  if (!['user', 'admin'].includes(authenticatedUser.role)) {
+  if (!['user', 'admin'].includes(authenticatedUser.role)) { // check role in decoded object (authenticatedUser)
     sendJson(res, 403, { message: 'You are not authorized to view movies.' })
-    return
+    return // return error if not authorised role (admin or user). 
   }
 
   const page = Math.max(Number.parseInt(url.searchParams.get('page') || '1', 10), 1)
@@ -258,17 +258,19 @@ const handleUserProfile = async (req, res, url) => {
   }
 }
 
-export async function handleUserRoutes(req, res, url) {
+export async function handleUserRoutes(req, res, url) { // this is the router invoked from server.js 
+  // User endpoint to fetch and display User Profile Details
   if (req.method === 'GET' && url.pathname === '/api/profile') {
     await handleUserProfile(req, res, url)
     return true
   }
 
+  // User endpoint for adding a movie as user's favourite
   if (req.method === 'PUT' && /^\/api\/favorites\/\d+$/.test(url.pathname)) {
     await handleFavoriteToggle(req, res, url, true)
     return true
   }
-
+  // User endpoint for removing a movie as user's favourite
   if (req.method === 'DELETE' && /^\/api\/favorites\/\d+$/.test(url.pathname)) {
     await handleFavoriteToggle(req, res, url, false)
     return true

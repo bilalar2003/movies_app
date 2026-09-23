@@ -272,7 +272,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (await handleUserRoutes(req, res, url)) {
+  if (await handleUserRoutes(req, res, url)) { // this is the router for user-specific endpoints
     return;
   }
 
