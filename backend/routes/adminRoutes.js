@@ -98,6 +98,32 @@ const handleAdminMoviesList = async (req, res, url) => {
   }
 }
 
+const handleAdminReviewsList = async (req, res, url) => {
+  logRequest(req, url)
+
+  const authenticatedUser = requireAdmin(req, res)
+  if (!authenticatedUser) {
+    return
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT mr.id AS review_id, mr.rating, mr.review,
+        u.name AS user_name, u.email AS user_email,
+        m.id AS movie_id, m.title AS movie_title
+       FROM movie_reviews mr
+       INNER JOIN users u ON u.id = mr.user_id
+       INNER JOIN movies m ON m.id = mr.movie_id
+       ORDER BY mr.id DESC`
+    )
+
+    sendJson(res, 200, { reviews: result.rows })
+  } catch (error) {
+    console.error('Admin reviews list error:', error)
+    sendJson(res, 500, { message: 'Failed to load reviews.' })
+  }
+}
+
 export async function handleAdminRoutes(req, res, url) {
   if (req.method === 'GET' && url.pathname === '/api/admin/users') {
     await handleUsersList(req, res, url)
@@ -106,6 +132,11 @@ export async function handleAdminRoutes(req, res, url) {
 
   if (req.method === 'GET' && url.pathname === '/api/admin/movies') {
     await handleAdminMoviesList(req, res, url)
+    return true
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/admin/reviews') {
+    await handleAdminReviewsList(req, res, url)
     return true
   }
 

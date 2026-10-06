@@ -7,6 +7,7 @@ function AdminHome() {
   const navigate = useNavigate()
   const [users, setUsers] = useState([])
   const [movies, setMovies] = useState([])
+  const [reviews, setReviews] = useState([])
   const [moviePage, setMoviePage] = useState(1)
   const [totalMoviePages, setTotalMoviePages] = useState(1)
   const [loading, setLoading] = useState(true)
@@ -20,13 +21,15 @@ function AdminHome() {
       setErrorMessage('')
 
       try {
-        const [usersResponse, moviesResponse] = await Promise.all([
+        const [usersResponse, moviesResponse, reviewsResponse] = await Promise.all([
           fetchProtected('/api/admin/users'),
           fetchProtected(`/api/admin/movies?page=${moviePage}`),
+          fetchProtected('/api/admin/reviews'),
         ])
 
         const usersData = await usersResponse.json()
         const moviesData = await moviesResponse.json()
+        const reviewsData = await reviewsResponse.json()
 
         if (!usersResponse.ok) {
           throw new Error(usersData.message || 'Failed to load users')
@@ -36,9 +39,14 @@ function AdminHome() {
           throw new Error(moviesData.message || 'Failed to load movies')
         }
 
+        if (!reviewsResponse.ok) {
+          throw new Error(reviewsData.message || 'Failed to load reviews')
+        }
+
         if (isCurrent) {
           setUsers(usersData.users || [])
           setMovies(moviesData.movies || [])
+          setReviews(reviewsData.reviews || [])
           setTotalMoviePages(moviesData.totalPages || 1)
         }
       } catch (error) {
@@ -75,7 +83,7 @@ function AdminHome() {
           <div>
             <p className="movies-kicker">ADMIN / CONTROL PANEL</p>
             <h1>Manage access.</h1>
-            <p className="movies-intro">Users and movie inventory overview.</p>
+            <p className="movies-intro">Users, movie inventory, and submitted reviews.</p>
           </div>
           <div className="movies-header-actions">
             <button type="button" className="logout-button" onClick={handleLogout}>
@@ -156,6 +164,40 @@ function AdminHome() {
                     </button>
                   </nav>
                 </>
+              )}
+            </section>
+
+            <section className="profile-favorites admin-section" aria-labelledby="reviews-heading">
+              <div className="profile-section-heading">
+                <div>
+                  <p className="movie-panel-label">REVIEWS</p>
+                  <h2 id="reviews-heading">User Reviews</h2>
+                </div>
+                <span>{reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</span>
+              </div>
+
+              {reviews.length === 0 ? (
+                <p className="movies-state profile-empty-state">No reviews found.</p>
+              ) : (
+                <div className="admin-review-list" aria-label="User reviews">
+                  {reviews.map((review, index) => (
+                    <article className="admin-review" key={review.review_id}>
+                      <div className="admin-review-heading">
+                        <span className="movie-number">{String(index + 1).padStart(2, '0')}</span>
+                        <div className="admin-review-user">
+                          <strong>{review.user_name}</strong>
+                          <span>{review.user_email}</span>
+                        </div>
+                        <div className="admin-review-movie">
+                          <span>Movie</span>
+                          <strong>{review.movie_title}</strong>
+                        </div>
+                        <span className="review-rating">{review.rating}/5</span>
+                      </div>
+                      <p className="admin-review-text">{review.review}</p>
+                    </article>
+                  ))}
+                </div>
               )}
             </section>
           </>
