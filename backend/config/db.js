@@ -3,8 +3,6 @@ import pg from "pg"; // brings in the "pg" package to talk to PostgreSQL databas
 
 dotenv.config(); // loads variables from our .env file into process.env
 
-const { Pool } = pg; // pulls out the Pool class from pg 
-
 // below is code for setting up 
 // connection pool to the PostgreSQL database
 // using environment variables for configuration.

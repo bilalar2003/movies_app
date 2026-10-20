@@ -2,6 +2,9 @@ import chalk from 'chalk'
 import { pool } from '../config/db.js'
 import { verifyToken } from '../middleware/auth.js'
 
+const apiPrefix = '/api/admin/'
+
+// method colors for logging on terminal
 const methodColors = {
   GET: chalk.green,
   POST: chalk.yellow,
@@ -10,25 +13,30 @@ const methodColors = {
   PATCH: chalk.magenta,
 }
 
+// function to log api calls on terminal (with color)
 const logRequest = (req, url) => {
   const colorFn = methodColors[req.method] || chalk.white
   console.log(`${colorFn(req.method)} ${url}`)
 }
 
+// same as before 
 const sendJson = (res, statusCode, payload) => {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify(payload))
 }
 
+// function to verify admin's accessToken on each API request 
 const requireAdmin = (req, res) => {
   const authenticatedUser = verifyToken(req)
 
-  if (!authenticatedUser) {
+  if (!authenticatedUser) { // if token expired,
+    // send 401: Unauthorized error
     sendJson(res, 401, { message: 'Authentication required.' })
     return null
   }
 
   if (authenticatedUser.role !== 'admin') {
+    // 403: Forbidden, means you lack permission for requested functionality 
     sendJson(res, 403, { message: 'Admin access required.' })
     return null
   }
@@ -36,15 +44,17 @@ const requireAdmin = (req, res) => {
   return authenticatedUser
 }
 
-const handleUsersList = async (req, res, url) => {
+const handleAdminUsersList = async (req, res, url) => {
   logRequest(req, url)
 
+  // check if accessToken is valid and if user has admin role 
   const authenticatedUser = requireAdmin(req, res)
   if (!authenticatedUser) {
     return
   }
 
   try {
+    // fetch all user details from DB
     const result = await pool.query(
       `SELECT id, name, email, role
        FROM users
@@ -53,48 +63,11 @@ const handleUsersList = async (req, res, url) => {
     )
 
     sendJson(res, 200, { users: result.rows })
+    // 200:OK meaning request was succesful, user data was set in response and sent. 
   } catch (error) {
     console.error('Admin users list error:', error)
     sendJson(res, 500, { message: 'Failed to load users.' })
-  }
-}
-
-const handleAdminMoviesList = async (req, res, url) => {
-  logRequest(req, url)
-
-  const authenticatedUser = requireAdmin(req, res)
-  if (!authenticatedUser) {
-    return
-  }
-
-  const page = Math.max(Number.parseInt(url.searchParams.get('page') || '1', 10), 1)
-  const limit = 10
-
-  try {
-    const totalResult = await pool.query('SELECT COUNT(*)::int AS total FROM movies')
-    const totalMovies = totalResult.rows[0].total
-    const totalPages = Math.max(1, Math.ceil(totalMovies / limit))
-    const currentPage = Math.min(page, totalPages)
-    const offset = (currentPage - 1) * limit
-
-    const result = await pool.query(
-      `SELECT id, title, description, genre, rating, release_year
-       FROM movies
-       ORDER BY id ASC
-       LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    )
-
-    sendJson(res, 200, {
-      movies: result.rows,
-      page: currentPage,
-      totalPages,
-      totalMovies,
-      limit,
-    })
-  } catch (error) {
-    console.error('Admin movies list error:', error)
-    sendJson(res, 500, { message: 'Failed to load movies.' })
+    // 500 Internal Server Error if any error occurred 
   }
 }
 
@@ -107,6 +80,7 @@ const handleAdminReviewsList = async (req, res, url) => {
   }
 
   try {
+    // fetch all movie reviews along with the user data who submitted the review 
     const result = await pool.query(
       `SELECT mr.id AS review_id, mr.rating, mr.review,
         u.name AS user_name, u.email AS user_email,
@@ -125,20 +99,19 @@ const handleAdminReviewsList = async (req, res, url) => {
 }
 
 export async function handleAdminRoutes(req, res, url) {
-  if (req.method === 'GET' && url.pathname === '/api/admin/users') {
-    await handleUsersList(req, res, url)
-    return true
+  
+  // admin endpoint to retrieve all users registered in the app 
+  if (req.method === 'GET' && url.pathname === `${apiPrefix}users`) {
+    await handleAdminUsersList(req, res, url) // call function to handle API.
+    return true // this is to tell server.js the endpoint was found and handled.
   }
 
-  if (req.method === 'GET' && url.pathname === '/api/admin/movies') {
-    await handleAdminMoviesList(req, res, url)
-    return true
+  // admin endpoint to retrieve all movies reviews in app
+  if (req.method === 'GET' && url.pathname === `${apiPrefix}reviews`) {
+    await handleAdminReviewsList(req, res, url) // same. 
+    return true // same. 
   }
 
-  if (req.method === 'GET' && url.pathname === '/api/admin/reviews') {
-    await handleAdminReviewsList(req, res, url)
-    return true
-  }
-
-  return false
+  return false // if endpoint was not found in this file, return false to server.js
+  // telling server.js the endpoint for API call wasn't found. 
 }
