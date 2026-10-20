@@ -23,7 +23,8 @@ CREATE TABLE movie_reviews (
     review TEXT,
 
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE
+    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+    CONSTRAINT movie_reviews_user_movie_unique UNIQUE (user_id, movie_id)
 );
 
 CREATE TABLE favorites (

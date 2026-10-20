@@ -1,20 +1,48 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchProtected, logout } from '../services/api'
 import '../App.css'
 
 function AdminHome() {
-  const navigate = useNavigate()
-  const [users, setUsers] = useState([])
-  const [movies, setMovies] = useState([])
-  const [reviews, setReviews] = useState([])
-  const [moviePage, setMoviePage] = useState(1)
-  const [totalMoviePages, setTotalMoviePages] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
+  const navigate = useNavigate() // to navigate between pages
+  const [users, setUsers] = useState([]) // state to hold all user rows registered in the app (fetched from DB)
+  const [movies, setMovies] = useState([]) // state to hold all movie rows in DB
+  const [reviews, setReviews] = useState([]) // state to hold all movie reviews in DB
+  const [moviePage, setMoviePage] = useState(1) // state to hold current page number for 
+  const [totalMoviePages, setTotalMoviePages] = useState(1) // state to hold total pages needed to display all movie rows
+  const [loading, setLoading] = useState(true) // same as before 
+  const [errorMessage, setErrorMessage] = useState('') // same as before 
+  const scrollPositionRef = useRef(null) // ref to hold current scroll position 
 
+  const apiPrefix = '/api/'
+  const adminPrefix = 'admin/'
+
+  useLayoutEffect(() => { // this runs when movies state changes,
+      // meaning when user navigates between pages, and new movies are loaded.
+    if (scrollPositionRef.current !== null) { // checks if scroll ref holds any value. 
+      window.scrollTo(0, scrollPositionRef.current)
+      // above, window is browser window object,
+      // scrollTo() scrolls the window to the specified position,
+      // first argument is x-coordinate (horizontal), second is y-coordinate (vertical),
+      // here, it scrolls to the position stored in scrollPositionRef.current,
+      // which was set when user clicked next/previous page button.
+      scrollPositionRef.current = null // after scrolling, scrollPositionRef is reset to null,
+      // so that it doesn't affect future page navigations.
+    }
+  }, [movies]) 
+
+  // to scroll up to top of page when first accessed
   useEffect(() => {
-    let isCurrent = true
+    window.scrollTo(0, 0)
+  }, [])
+  // window is the browser’s global object,
+  // representing the open page,
+  // it holds things like the document, location, and history
+  // scrollTo(x, y) scrolls page to given x & y coordinates.
+  // 0,0 moves to top left of the page.
+
+  useEffect(() => { // effect runs 
+    let isCurrent = true // mark effect as active 
 
     const loadAdminData = async () => {
       setLoading(true)
@@ -22,14 +50,15 @@ function AdminHome() {
 
       try {
         const [usersResponse, moviesResponse, reviewsResponse] = await Promise.all([
-          fetchProtected('/api/admin/users'),
-          fetchProtected(`/api/admin/movies?page=${moviePage}`),
-          fetchProtected('/api/admin/reviews'),
-        ])
+          fetchProtected(`${apiPrefix}${adminPrefix}users`),
+          fetchProtected(`${apiPrefix}movies?page=${moviePage}`),
+          fetchProtected(`${apiPrefix}${adminPrefix}reviews`),
+        ]) // promise.all runs both promises together, returning 
+        // their result in same order as the array 
 
         const usersData = await usersResponse.json()
         const moviesData = await moviesResponse.json()
-        const reviewsData = await reviewsResponse.json()
+        const reviewsData = await reviewsResponse.json() // parse both users and reviews data
 
         if (!usersResponse.ok) {
           throw new Error(usersData.message || 'Failed to load users')
@@ -43,11 +72,11 @@ function AdminHome() {
           throw new Error(reviewsData.message || 'Failed to load reviews')
         }
 
-        if (isCurrent) {
+        if (isCurrent) { // if effect active, set data in state variables below 
           setUsers(usersData.users || [])
           setMovies(moviesData.movies || [])
-          setReviews(reviewsData.reviews || [])
           setTotalMoviePages(moviesData.totalPages || 1)
+          setReviews(reviewsData.reviews || [])
         }
       } catch (error) {
         if (isCurrent) {
@@ -67,13 +96,18 @@ function AdminHome() {
     loadAdminData()
 
     return () => {
-      isCurrent = false
+      isCurrent = false // mark effect as inactive 
     }
-  }, [moviePage, navigate])
+  }, [moviePage, navigate]) // effect runs 
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/', { replace: true })
+  const changeMoviePage = (direction) => { // eventListener function, runs upon page change click. direction is parameter,
+    // that holds values -1 or 1, respecitvely indicating to move to prev. & next page. 
+    scrollPositionRef.current = window.scrollY // save the vertical scroll position of page into the ref. value
+    setMoviePage((current) => current + direction) // update page state variable to new page number
+  }
+  const handleLogout = async () => { // event listener for logging out admin.
+    await logout() // wait for logout endpoint to be processed
+    navigate('/', { replace: true }) // replace existing top entry in browser history stack with this entry.
   }
 
   return (
@@ -86,7 +120,7 @@ function AdminHome() {
             <p className="movies-intro">Users, movie inventory, and submitted reviews.</p>
           </div>
           <div className="movies-header-actions">
-            <button type="button" className="logout-button" onClick={handleLogout}>
+            <button type="button" className="logout-button" onClick={handleLogout}> {/* event emitter for logging out */}
               Log out
             </button>
           </div>
@@ -139,7 +173,13 @@ function AdminHome() {
                 <>
                   <div className="movie-list" aria-label="Movies list">
                     {movies.map((movie, index) => (
-                      <div className="movie-row" key={movie.id}>
+                      <div
+                        className="movie-row admin-movie-row"
+                        key={movie.id}
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => navigate(`/adminMovie/${movie.id}`)}
+                      >
                         <span className="movie-number">{String((moviePage - 1) * 10 + index + 1).padStart(2, '0')}</span>
                         <span className="movie-main">
                           <strong>{movie.title}</strong>
@@ -155,11 +195,11 @@ function AdminHome() {
                   </div>
 
                   <nav className="movies-pagination" aria-label="Admin movie pages">
-                    <button type="button" disabled={moviePage === 1} onClick={() => setMoviePage((current) => Math.max(1, current - 1))}>
+                    <button type="button" disabled={moviePage === 1} onClick={() => changeMoviePage(-1)}>
                       Previous
                     </button>
                     <span>Page {moviePage} of {totalMoviePages}</span>
-                    <button type="button" disabled={moviePage === totalMoviePages} onClick={() => setMoviePage((current) => Math.min(totalMoviePages, current + 1))}>
+                    <button type="button" disabled={moviePage === totalMoviePages} onClick={() => changeMoviePage(1)}>
                       Next
                     </button>
                   </nav>
