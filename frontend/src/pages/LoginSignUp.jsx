@@ -17,7 +17,7 @@ function LoginSignup() {
 
   // this is an event handler function.
   const handleChange = (event) => { // the event parameter is an object 
-  // that contains info. about the event that occurred.
+  // that contains info. about the event took place.
   // it is automatically passed to event handler when an event occurs (eg user typing in input field).
     // event.target is the html element that triggered the event.
     const name = event.target.name // name attribute of input field.
@@ -34,7 +34,7 @@ function LoginSignup() {
   }
 
   const handleSubmit = async (event) => { // async allows function to use await to pause execution,
-    // until a promise is reolved/rejected, (such as fetch() request to backend server),
+    // until a promise is resolved/rejected, (such as fetch() request to backend server),
     // and then resume execution with resolved value.
     
     event.preventDefault() // prevents page from reloading. 
