@@ -32,7 +32,7 @@ const ApiPrefix = '/api/'
 
 const logRequest = (req, url) => {
   const colorFn = methodColors[req.method] || chalk.white
-  console.log(`${colorFn(req.method)} ${url}`)
+  console.log(`${colorFn(req.method)} ${url}`) 
 }
 
 // Using Node's HTTP module to set up server.
@@ -49,7 +49,7 @@ const server = http.createServer(async (req, res) => {
 
   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173'); // requests only from this url will be entertained, * would mean from any url.
   res.setHeader('Access-Control-Allow-Credentials', 'true'); // tells browser to allow sending cookies in the response object.
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS'); // sets HTTP methods client can include in its requests.
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS'); // sets HTTP methods client can include in its requests.
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // allows client to send content-type and authorization headers in their requests.
 
   // Below is a preflight request;
