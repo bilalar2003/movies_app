@@ -1,8 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+// createPortal(children, domNode) renders JSX into a different DOM node instead of inside its parent.
+// The target is often document.body, so the output sits outside the parent’s DOM tree.
+// It’s commonly used for modals, tooltips, and dropdowns.
 
-function getInitialValues({ type, record }) {
-  if (type === 'user') {
+// this function sets up the fields in the edit modal, 
+// based on item type (user, movie, review)
+function getInitialValues({ type, record }) { // we do object destructuring to get type & record.
+  if (type === 'user') { // if item type is user then return 
+    // the below object as form input fields in the edit modal to show. 
     return {
       name: record.name || '',
       email: record.email || '',
@@ -11,7 +17,8 @@ function getInitialValues({ type, record }) {
     }
   }
 
-  if (type === 'movie') {
+  if (type === 'movie') { // if item type is movie then return 
+    // the below object as form input fields in the edit modal to show. 
     return {
       title: record.title || '',
       description: record.description || '',
@@ -20,115 +27,134 @@ function getInitialValues({ type, record }) {
       release_year: record.release_year ?? '',
     }
   }
-
+  // else, return below object for review type item as form input fields 
+  // in the edit modal to show.
   return {
     rating: record.rating ?? '',
     review: record.review || '',
   }
 }
 
-function AdminEditModal({ item, onClose, onSave }) {
-  const [values, setValues] = useState(() => getInitialValues(item))
-  const [isClosing, setIsClosing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
-  const typeLabel = item.type === 'user' ? 'user' : item.type === 'movie' ? 'movie' : 'review'
-  const isCreating = item.mode === 'create'
+function AdminEditModal({ item, onClose, onSave }) { // these parameters are data passed as params from parent (AdminHome.jsx)
+  const [values, setValues] = useState(() => getInitialValues(item)) // state to hold form input fields, 
+  // initialized based on the item type and record
+  // The parent removes the modal immediately when onClose() is called.
+  const onCloseRef = useRef(onClose)
+  const [isSaving, setIsSaving] = useState(false) // state to hold if form is being saved,
+  // used to disable the save button and show a loading state
+  const [saveError, setSaveError] = useState('') // state to hold any error message from the save operation,
+  const typeLabel = item.type === 'user' ? 'user' : item.type === 'movie' ? 'movie' : 'review' // used to display correct label,
+  // in the modal header and save button text based on the item type
+  const isCreating = item.mode === 'create' // bool variable to determine if modal is in create or edit mode, 
+  // based on the item.mode prop
 
   useEffect(() => {
-    const scrollY = window.scrollY
-    const previousBodyStyles = {
+    onCloseRef.current = onClose
+  }, [onClose])
+
+  // this useEffect locks the page from scrolling when the modal is open, 
+  // and restores the scroll position when the modal is closed.
+  useEffect(() => {
+    const scrollY = window.scrollY // to store current vertical scroll position,
+    // so we can restore it when modal closes
+    const previousBodyStyles = { // object used as a backup box that stores the body’s original inline style values
+      // so we can restore them when modal closes
+      // document.body is the body element of the webpage.
+      // .style is the body's inline styles 
+      // position is the CSS position value (static, fixed, etc) that decides how the body is placed
+      // top is how far the body is pushed from the top of the screen
+      // left is how far the body is pushed from the left of the screen
+      // right is how far the body is pushed from the right of the screen
+      // width is the width of the body
+      // overflow is what happens to content that goes beyond the body (hidden stops scrolling, auto allows it)
       position: document.body.style.position,
       top: document.body.style.top,
       left: document.body.style.left,
       right: document.body.style.right,
       width: document.body.style.width,
-      overflow: document.body.style.overflow,
+      overflow: document.body.style.overflow, // overflow is set to hidden to prevent scrolling when modal is open
     }
+    // below pins body to the screen, so the page behind the modal can't scroll
     document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.left = '0'
-    document.body.style.right = '0'
-    document.body.style.width = '100%'
-    document.body.style.overflow = 'hidden'
+    document.body.style.top = `-${scrollY}px` // Setting top to a negative value (-scrollY) 
+    // pushes the body back up by exactly the distance the user had scrolled
+    document.body.style.left = '0' // pins the body to the left edge of the screen
+    document.body.style.right = '0' // pins the body to the right edge of the screen
+    document.body.style.width = '100%' // ensures the body takes up the full width of the viewport
+    document.body.style.overflow = 'hidden' // prevents any scrolling on the body while the modal is open
 
-    const handleKeyDown = (event) => {
+    const handleKeyDown = (event) => { // this is when user clicks on escape key, modal closes
       if (event.key === 'Escape') {
-        setIsClosing(true)
+        onCloseRef.current()
       }
     }
 
-    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('keydown', handleKeyDown) // this add event listener for key press, 
+    // it then runs the associated function handleKeyDown() when a key is pressed.
 
     return () => {
-      Object.assign(document.body.style, previousBodyStyles)
-      document.removeEventListener('keydown', handleKeyDown)
-      window.scrollTo(0, scrollY)
+      Object.assign(document.body.style, previousBodyStyles) // this restores the original body styles upon closing modal.
+      document.removeEventListener('keydown', handleKeyDown) // when effect completes, remove event listener
+      window.scrollTo(0, scrollY) // restores scroll position on page to where it was, before modal opened
     }
-  }, [])
+  }, []) // this effect runs only when component first mounts. 
 
-  const updateValue = (event) => {
+  // this updates fields in modal upon user input
+  const updateValue = (event) => { 
     const { name, value } = event.target
     setValues((currentValues) => ({ ...currentValues, [name]: value }))
   }
 
+  // this function handles the IMDb rating input for movies, 
+  // ensuring that the value is formatted correctly as the user types.
   const updateMovieRating = (event) => {
-    const input = event.target
-    const value = input.value.replace(/[^\d.]/g, '')
-    const decimalIndex = value.indexOf('.')
-    let formattedValue
+    const input = event.target // DOM element that triggered the event
+    const value = input.value.replace(/[^\d.]/g, '') // the regex means replace any character that isn't a digit or a period
+    // with empty character, effectively removing it from the input value. Thus, user can only enter digits and dot.
+    let formattedValue // variable to hold formatted value of rating input field
 
-    if (decimalIndex !== -1) {
-      const wholeNumber = value.slice(0, decimalIndex) || '0'
-      const decimal = value.slice(decimalIndex + 1).replace(/\./g, '').slice(0, 1)
-      formattedValue = `${wholeNumber}.${decimal}`
-    } else if (value.length === 2 && value !== '10') {
+    if (value.includes('.')) { // if value includes a dot, split the value into whole and decimal parts
+      const [whole = '0', ...decimals] = value.split('.') // split() returns an array of strings, 
+      // where the first element is the whole part and the rest are decimal parts.
+      formattedValue = `${whole}.${decimals.join('').slice(0, 1)}` // decimals.join() joins the decimal parts into a single string, 
+      // and slice(0, 1) takes only the first character of that string, ie first decimal place only.
+    } else if (value.length === 2 && value !== '10') { // if value is two digits and not 10, format it as X.X
       formattedValue = `${value[0]}.${value[1]}`
-    } else if (value.length === 3 && value.startsWith('10')) {
-      formattedValue = `10.${value[2]}`
-    } else {
-      formattedValue = value.slice(0, 2)
+    } else if (value.length === 2 && value === '10') {
+      formattedValue = '9.9' // if value is exactly 10, format it as 9.9
     }
 
-    setValues((currentValues) => ({ ...currentValues, rating: formattedValue }))
-    requestAnimationFrame(() => input.setSelectionRange(formattedValue.length, formattedValue.length))
+    // update the rating field in values state with the formatted value
+    setValues((currentValues) => ({ ...currentValues, rating: formattedValue })) 
   }
-
+  // this function handles the review rating input, ensuring that the value is a single digit between 1 and 5, or empty
   const updateReviewRating = (event) => {
     const { value } = event.target
-    if (/^[1-5]?$/.test(value)) {
+    if (/^[1-5]?$/.test(value)) { // update rating field only if input value is a single digit between 1 and 5, or empty
       setValues((currentValues) => ({ ...currentValues, rating: value }))
     }
   }
 
+  // this function handles the form submission, calls onSave prop with the current values,
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    setIsSaving(true)
-    setSaveError('')
+    event.preventDefault() 
+    setIsSaving(true) // flag to indicate that form is being saved
+    setSaveError('') // initialise saveError to empty string
 
     try {
-      await onSave(values)
-      setIsClosing(true)
+      await onSave(values) // calls the onSave prop function passed from AdminHome.jsx, which updates the item in the database
+      onClose() // onClose() is function passed as prop here, it sets the editingItem state in AdminHome to null.
     } catch (error) {
       setSaveError(error.message)
     } finally {
-      setIsSaving(false)
+      setIsSaving(false) // flag to indicate that form is no longer being saved
     }
   }
 
-  return createPortal(
+  return createPortal( // this renders the modal JSX 
+    // into a different place in the DOM than where the component normally sits
     <div
-      className={`admin-edit-overlay${isClosing ? ' is-closing' : ''}`}
-      onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget && event.animationName === 'admin-edit-fade-out') {
-          onClose()
-        }
-      }}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !isClosing) {
-          setIsClosing(true)
-        }
-      }}
+      className="admin-edit-overlay" // the parent removes the modal immediately when onClose() is called
     >
       <section
         className="admin-edit-modal"
@@ -138,13 +164,13 @@ function AdminEditModal({ item, onClose, onSave }) {
       >
         <header className="admin-edit-header">
           <div>
-            <h2 id="admin-edit-title">{isCreating ? 'Add' : 'Edit'} {typeLabel}</h2>
+            <h2 id="admin-edit-title">{isCreating ? 'Add' : 'Edit'} {typeLabel}</h2> {/* Display if editing or creating an item */}
           </div>
           <button
             className="admin-edit-close"
             type="button"
             aria-label="Close edit dialog"
-            onClick={() => setIsClosing(true)}
+            onClick={onClose} // event emitter that closes the modal when close button clicked.
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m6 6 12 12M18 6 6 18" />
@@ -153,7 +179,7 @@ function AdminEditModal({ item, onClose, onSave }) {
         </header>
 
         <form className={`admin-edit-form admin-edit-form-${item.type}`} onSubmit={handleSubmit}>
-          {item.type === 'user' && (
+          {item.type === 'user' && ( // if item type is user, then render below JSX for the form fields in the modal.
             <>
               <label className="admin-edit-field admin-edit-user-name">
                 <span>Full name <em className="required-asterisk" aria-hidden="true">*</em></span>
@@ -161,7 +187,7 @@ function AdminEditModal({ item, onClose, onSave }) {
                   autoFocus
                   autoComplete="name"
                   name="name"
-                  onChange={updateValue}
+                  onChange={updateValue} // event emitter to update the values state when user types in the input field
                   required
                   value={values.name}
                 />
@@ -171,7 +197,7 @@ function AdminEditModal({ item, onClose, onSave }) {
                 <input
                   autoComplete="email"
                   name="email"
-                  onChange={updateValue}
+                  onChange={updateValue} // event emitter to update the values state when user types in the input field
                   required
                   type="email"
                   value={values.email}
@@ -206,7 +232,7 @@ function AdminEditModal({ item, onClose, onSave }) {
                 <input
                   autoComplete="new-password"
                   name="password"
-                  onChange={updateValue}
+                  onChange={updateValue} // event emitter to update the values state when user types in the input field
                   placeholder={isCreating ? 'Create a password' : 'Enter a new password'}
                   type="password"
                   minLength={isCreating ? 5 : undefined}
@@ -224,14 +250,14 @@ function AdminEditModal({ item, onClose, onSave }) {
             </>
           )}
 
-          {item.type === 'movie' && (
+          {item.type === 'movie' && ( // if item type is movie, then render below JSX for the form fields in the modal.
             <>
               <label className="admin-edit-field admin-edit-movie-title">
                 <span>Movie title <em className="required-asterisk" aria-hidden="true">*</em></span>
                 <input
                   autoFocus
                   name="title"
-                  onChange={updateValue}
+                  onChange={updateValue} // event emitter to update the values state when user types in the input field
                   required
                   value={values.title}
                 />
@@ -246,7 +272,7 @@ function AdminEditModal({ item, onClose, onSave }) {
                   max="9999"
                   min="1888"
                   name="release_year"
-                  onChange={updateValue}
+                  onChange={updateValue} // event emitter to update the values state when user types in the input field
                   required={isCreating}
                   type="number"
                   value={values.release_year}
@@ -258,11 +284,11 @@ function AdminEditModal({ item, onClose, onSave }) {
                   inputMode="decimal"
                   maxLength="4"
                   name="rating"
-                  onChange={updateMovieRating}
+                  onChange={updateMovieRating} // event emitter to update imdb rating field in values state upon user input.
                   pattern="(?:10|[0-9])\.[0-9]"
                   placeholder="e.g. 7.5"
                   required={isCreating}
-                  title="Enter the rating in X.X format, from 0.0 to 10.0."
+                  title="Enter the rating in X.X format, from 0.0 to 9.9."
                   type="text"
                   value={values.rating}
                 />
@@ -271,7 +297,7 @@ function AdminEditModal({ item, onClose, onSave }) {
                 <span>Description <em className="required-asterisk" aria-hidden="true">*</em></span>
                 <textarea
                   name="description"
-                  onChange={updateValue}
+                  onChange={updateValue} // event emitter to update description field in values state upon user input.
                   required={isCreating}
                   rows="3"
                   value={values.description}
@@ -280,7 +306,7 @@ function AdminEditModal({ item, onClose, onSave }) {
             </>
           )}
 
-          {item.type === 'review' && (
+          {item.type === 'review' && ( // else, if item type is review, then render below JSX for the form fields in the modal.
             <>
               <label className="admin-edit-field admin-edit-review-rating">
                 <span>Rating <small>1–5 stars</small></span>
@@ -288,7 +314,7 @@ function AdminEditModal({ item, onClose, onSave }) {
                   inputMode="numeric"
                   maxLength="1"
                   name="rating"
-                  onChange={updateReviewRating}
+                  onChange={updateReviewRating} // event emitter to update rating field in values state upon user input.
                   pattern="[1-5]"
                   required
                   title="Enter a single digit from 1 to 5."
@@ -301,7 +327,7 @@ function AdminEditModal({ item, onClose, onSave }) {
                 <textarea
                   maxLength="1000"
                   name="review"
-                  onChange={updateValue}
+                  onChange={updateValue} // event emitter to update review field in values state upon user input.
                   required
                   rows="3"
                   value={values.review}
@@ -310,9 +336,9 @@ function AdminEditModal({ item, onClose, onSave }) {
             </>
           )}
 
-          {saveError && <p className="admin-edit-error" role="alert">{saveError}</p>}
+          {saveError && <p className="admin-edit-error" role="alert">{saveError}</p>} {/* display save error when the error occurs */}
           <footer className="admin-edit-footer">
-            <button className="admin-edit-cancel" type="button" onClick={() => setIsClosing(true)}>
+            <button className="admin-edit-cancel" type="button" onClick={onClose}>
               Cancel
             </button>
             <button className="admin-edit-save" type="submit" disabled={isSaving}>
@@ -322,8 +348,11 @@ function AdminEditModal({ item, onClose, onSave }) {
         </form>
       </section>
     </div>,
-    document.body
+    document.body // document.body is the container: the <body> element of the page
   )
 }
+
+// meaning the modal’s HTML is placed directly inside <body>, 
+// even though the component is written deep inside your other components
 
 export default AdminEditModal

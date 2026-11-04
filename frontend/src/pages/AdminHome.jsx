@@ -1,35 +1,41 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchProtected, logout } from '../services/api'
-import AdminConfirmModal from '../modals/AdminConfirmModal'
+import { fetchProtected, logout } from '../services/api' 
+import AdminConfirmModal from '../modals/AdminConfirmModal' // import modals. 
 import AdminEditModal from '../modals/AdminEditModal'
 import '../App.css'
 
+// this function runs for edit/delete actions on user, movies, and reviews rows.
+// itemType is the item type being edited/removed, eg user, movie, or review.
+// record is the actual data row for that item that is to be edited/removed, eg user object, movie object, or review object
+// onEdit and onRemove are callback functions passed from AdminHome component
 function AdminRowActions({ itemType, record, onEdit, onRemove }) {
   return (
     <span className="admin-row-actions">
-      <button
+      <button // this button is for edit action, 
+      // which opens the edit modal when clicked.
         className="admin-row-action"
         type="button"
         aria-label={`Edit ${itemType}`}
         title={`Edit ${itemType}`}
         onClick={(event) => {
           event.stopPropagation()
-          onEdit(itemType, record)
+          onEdit(itemType, record) // this calls HandleEdit(), sets editingItem state, and renders AdminEditModal
         }}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="m16 4 4 4M4 20l4-.8L19.2 8a2.1 2.1 0 0 0-3-3L5 16.2 4 20Z" />
         </svg>
       </button>
-      <button
+      <button // this is button for delete action, 
+      // which opens the confirmation modal when clicked.
         className="admin-row-action admin-row-action-delete"
         type="button"
         aria-label={`Delete ${itemType}`}
         title={`Delete ${itemType}`}
         onClick={(event) => {
           event.stopPropagation()
-          onRemove(itemType, record)
+          onRemove(itemType, record) // this calls HandleRemove(), sets removingItem state, and renders AdminConfirmModal
         }}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -40,7 +46,9 @@ function AdminRowActions({ itemType, record, onEdit, onRemove }) {
   )
 }
 
-function AdminAddButton({ itemType, onClick }) {
+function AdminAddButton({ itemType, onClick }) { // this is a generic function for add button,
+// which is used for both adding user and adding movie.
+// helps in enhancing reusability. 
   return (
     <button
       className="admin-add-button"
@@ -55,18 +63,20 @@ function AdminAddButton({ itemType, onClick }) {
   )
 }
 
-function AdminHome() {
+const AdminHome=() => {
   const navigate = useNavigate() // to navigate between pages
   const [users, setUsers] = useState([]) // state to hold all user rows registered in the app (fetched from DB)
   const [movies, setMovies] = useState([]) // state to hold all movie rows in DB
   const [reviews, setReviews] = useState([]) // state to hold all movie reviews in DB
-  const [moviePage, setMoviePage] = useState(1) // state to hold current page number for 
+  const [moviePage, setMoviePage] = useState(1) // state to hold current page number for movies list 
   const [totalMoviePages, setTotalMoviePages] = useState(1) // state to hold total pages needed to display all movie rows
   const [loading, setLoading] = useState(true) // same as before 
   const [errorMessage, setErrorMessage] = useState('') // same as before 
-  const [actionErrorMessage, setActionErrorMessage] = useState('')
-  const [editingItem, setEditingItem] = useState(null)
-  const [removingItem, setRemovingItem] = useState(null)
+  const [actionErrorMessage, setActionErrorMessage] = useState('') // used to hold error text shown when a delete action fails,
+  // editingItem holds { type, record, mode } for the item being edited or created, 
+  // removingItem holds { type, record } for the item awaiting deletion
+  const [editingItem, setEditingItem] = useState(null) // stores an object for item to be open in the edit modal
+  const [removingItem, setRemovingItem] = useState(null) // stores an object for item to be open in the remove confirmation modal
   const scrollPositionRef = useRef(null) // ref to hold current scroll position 
   const [successMessage, setSuccessMessage] = useState('') // state to hold success msg for displaying 
   const apiPrefix = '/api/'
@@ -88,7 +98,7 @@ function AdminHome() {
     return () => clearTimeout(timeoutId)
   }, [successMessage])
 
-  useLayoutEffect(() => { // this runs when movies state changes,
+  useEffect(() => { // this runs when movies state changes,
     // meaning when user navigates between pages, and new movies are loaded.
     if (scrollPositionRef.current !== null) { // checks if scroll ref holds any value. 
       window.scrollTo(0, scrollPositionRef.current)
@@ -125,7 +135,7 @@ function AdminHome() {
           fetchProtected(`${apiPrefix}movies?page=${moviePage}`),
           fetchProtected(`${apiPrefix}${adminPrefix}reviews`),
         ]) // promise.all runs both promises together, returning 
-        // their result in same order as the array 
+        // their result in same order as the array
 
         const usersData = await usersResponse.json()
         const moviesData = await moviesResponse.json()
@@ -169,7 +179,7 @@ function AdminHome() {
     return () => {
       isCurrent = false // mark effect as inactive 
     }
-  }, [moviePage, navigate]) // effect runs 
+  }, [moviePage]) // effect runs when moviePage changes.
 
   const changeMoviePage = (direction) => { // eventListener function, runs upon page change click. direction is parameter,
     // that holds values -1 or 1, respecitvely indicating to move to prev. & next page. 
@@ -180,28 +190,30 @@ function AdminHome() {
     await logout() // wait for logout endpoint to be processed
     navigate('/', { replace: true }) // replace existing top entry in browser history stack with this entry.
   }
-
+  // below functions just set the state variables 
+  // and since the JSX has {editingItem && <AdminEditModal />} and {removingItem && <AdminConfirmModal />}, 
+  // React re-renders and the modals appear.
   const handleEdit = (type, record) => {
     setEditingItem({ type, record, mode: 'edit' })
-  }
-
-  const handleAdd = (type) => {
+  } // type is which kind of item you’re dealing with ('user', 'movie', or 'review')
+  const handleAdd = (type) => { 
     setEditingItem({ type, record: {}, mode: 'create' })
-  }
-
+  } // record is the actual data row for that item (empty {} when adding a new one),
   const handleRemoveRequest = (type, record) => {
     setRemovingItem({ type, record })
-  }
+  } // mode is whether the edit modal is for 'edit' (update existing, PATCH) or 'create' (add new, POST)
+
 
   const handleConfirmRemove = async () => {
     if (!removingItem) {
       return
     }
 
-    if (removingItem.type === 'user') {
+    if (removingItem.type === 'user') { // if user to be removed, then proceed. make API call to backend to delete user from DB.
       setActionErrorMessage('')
 
       try {
+        // make API call to backend for removing user from DB
         const response = await fetchProtected(
           `${apiPrefix}${adminPrefix}users/${removingItem.record.id}`,
           { method: 'DELETE' }
@@ -212,8 +224,9 @@ function AdminHome() {
           throw new Error(data.message || 'Failed to remove user')
         }
 
+        // update users list to display on page, with removed user filtered out 
         setUsers((currentUsers) => currentUsers.filter((user) => user.id !== removingItem.record.id))
-        setReviews((currentReviews) => currentReviews.filter(
+        setReviews((currentReviews) => currentReviews.filter( // same here, remove reviews associated with that user 
           (review) => review.user_email !== removingItem.record.email
         ))
         setActionErrorMessage('')
@@ -249,7 +262,7 @@ function AdminHome() {
       } catch (error) {
         setActionErrorMessage(error.message || 'Failed to remove movie.')
       }
-    } else {
+    } else { // else if review to be removed, make corresponding API call to backend for removal. 
       setActionErrorMessage('')
 
       try {
@@ -275,12 +288,13 @@ function AdminHome() {
     setRemovingItem(null)
   }
 
-  const handleSaveEdit = async (values) => {
-    if (!editingItem) {
-      return
+  // this function is called when save button is clicked in AdminEditModal
+  const handleSaveEdit = async (values) => { // values is the object containing the updated data from the form in AdminEditModal
+    if (!editingItem) { // if editingItem is null, exit function 
+      return 
     }
 
-    if (editingItem.mode === 'create' && editingItem.type === 'user') {
+    if (editingItem.mode === 'create' && editingItem.type === 'user') { // call the API to create a new user in the database
       const response = await fetchProtected(`${apiPrefix}${adminPrefix}users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -296,6 +310,7 @@ function AdminHome() {
         throw new Error(data.message || 'Failed to create user')
       }
 
+      // below is used to refresh users list after new user is created
       const usersResponse = await fetchProtected(`${apiPrefix}${adminPrefix}users`)
       const usersData = await usersResponse.json()
 
@@ -303,10 +318,10 @@ function AdminHome() {
         throw new Error(usersData.message || 'User was created, but the user list could not be refreshed')
       }
 
-      setUsers(usersData.users || [])
+      setUsers(usersData.users || []) // update users list o display on page 
       setSuccessMessage('New user created successfully.')
       return
-    } else if (editingItem.mode === 'create' && editingItem.type === 'movie') {
+    } else if (editingItem.mode === 'create' && editingItem.type === 'movie') { // call API to create new movie in DB
       const response = await fetchProtected(`${apiPrefix}${adminPrefix}movies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -324,6 +339,7 @@ function AdminHome() {
         throw new Error(data.message || 'Failed to create movie')
       }
 
+      // refresh movies list to display on page 
       const moviesResponse = await fetchProtected(
         `${apiPrefix}movies?page=${totalMoviePages + 1}`
       )
@@ -338,17 +354,21 @@ function AdminHome() {
       setMoviePage(moviesData.page || 1)
       setSuccessMessage('New movie created successfully.')
       return
-    } else if (editingItem.type === 'user') {
+    } else if (editingItem.type === 'user' && editingItem.mode === 'edit') { // call API to update existing user in DB 
       const original = editingItem.record
-      const updates = {}
+      const updates = {} // list to determine which fields are to be updated of user 
       const name = values.name.trim()
       const email = values.email.trim().toLowerCase()
 
+      // if fields are changed, add them to updates object.
       if (name !== original.name) updates.name = name
       if (email !== original.email.toLowerCase()) updates.email = email
       if (values.password) updates.password = values.password
-      if (Object.keys(updates).length === 0) return
+      if (Object.keys(updates).length === 0) return // if no changes were made, exit function
+      // object.keys() returns array of object's field names, eg. ['name', 'email', 'password'] 
+      // if length is 0, means no changes were made. So return. 
 
+      // make API call to backend for updating user details in DB
       const response = await fetchProtected(
         `${apiPrefix}${adminPrefix}users/${original.id}`,
         {
@@ -363,16 +383,22 @@ function AdminHome() {
         throw new Error(data.message || 'Failed to update user')
       }
 
+      // this simply keeps users list in sync with updated user data
+      // without needing to re-fetch the entire list from the backend.
       setUsers((currentUsers) => currentUsers.map(
-        (user) => user.id === original.id ? data.user : user
+        (user) => user.id === original.id ? data.user : user // if user id matches original id, 
+        // replace that user object with the updated user object from API response, 
+        // else keep the same user object
       ))
+      // below updates the reviews list to reflect the updated user name and email 
+      // for any reviews associated with that user.
       setReviews((currentReviews) => currentReviews.map((review) => (
         review.user_email === original.email
           ? { ...review, user_name: data.user.name, user_email: data.user.email }
           : review
       )))
       setSuccessMessage('User updated successfully.')
-    } else if (editingItem.type === 'movie') {
+    } else if (editingItem.type === 'movie' && editingItem.mode === 'edit') { // call API to update existing movie in DB
       const original = editingItem.record
       const updates = {}
       const title = values.title.trim()
@@ -460,13 +486,13 @@ function AdminHome() {
         </header>
 
         {loading && <p className="movies-state">Loading admin dashboard...</p>}
-        {errorMessage && <p className="movies-state movies-state-error">{errorMessage}</p>}
-        {successMessage && (
+        {errorMessage && <p className="movies-state movies-state-error">{errorMessage}</p>} {/* show error msg */}
+        {successMessage && ( // show success msg when any action is successful.
           <p className="alert alert-success" role="status">
             {successMessage}
           </p>
         )}
-        {actionErrorMessage && (
+        {actionErrorMessage && ( // show error msg when any action fails, eg delete fails.
           <p className="movies-state movies-state-error" role="alert">
             {actionErrorMessage}
           </p>
@@ -482,7 +508,7 @@ function AdminHome() {
                 </div>
                 <div className="admin-section-actions">
                   <span className="admin-users-count">{users.length} {users.length === 1 ? 'user' : 'users'}</span>
-                  <AdminAddButton itemType="user" onClick={handleAdd} />
+                  <AdminAddButton itemType="user" onClick={handleAdd} /> {/* this is component for add user button */}
                 </div>
               </div>
 
@@ -499,7 +525,8 @@ function AdminHome() {
                       </span>
                       <span className="admin-user-role">
                         <span>{user.role}</span>
-                        <AdminRowActions itemType="user" record={user} onEdit={handleEdit} onRemove={handleRemoveRequest} />
+                        <AdminRowActions itemType="user" record={user} onEdit={handleEdit} onRemove={handleRemoveRequest} /> 
+                        {/* Above is the component for actions related to each user row */}
                       </span>
                     </div>
                   ))}
@@ -515,7 +542,7 @@ function AdminHome() {
                 </div>
                 <div className="admin-section-actions">
                   <span>{movies.length} {movies.length === 1 ? 'movie' : 'movies'}</span>
-                  <AdminAddButton itemType="movie" onClick={handleAdd} />
+                  <AdminAddButton itemType="movie" onClick={handleAdd} /> {/* this is component for add movie button */}
                 </div>
               </div>
 
@@ -543,6 +570,7 @@ function AdminHome() {
                           <span className="movie-rating">{Number(movie.rating || 0).toFixed(1)}</span>
                         </span>
                         <AdminRowActions itemType="movie" record={movie} onEdit={handleEdit} onRemove={handleRemoveRequest} />
+                        {/* Above is the component for actions related to each movie row */}
                       </div>
                     ))}
                   </div>
@@ -597,6 +625,7 @@ function AdminHome() {
                             <span className="review-rating">{review.rating}/5</span>
                           </div>
                           <AdminRowActions itemType="review" record={review} onEdit={handleEdit} onRemove={handleRemoveRequest} />
+                          {/* Above is the component for actions related to each review row */}
                         </div>
                       </div>
                     </article>
@@ -607,20 +636,23 @@ function AdminHome() {
           </>
         )}
       </section>
-      {editingItem && (
+      {editingItem && ( // when editingItem is updated, the AdminEditModal component is rendered with the current editingItem data 
+      // and the handleSaveEdit function as props. 
+      // This allows the modal to display the correct information and handle saving changes when the user submits the form.
         <AdminEditModal
-          key={`${editingItem.type}-${editingItem.mode}-${editingItem.record.id ?? editingItem.record.review_id ?? 'new'}`}
-          item={editingItem}
-          onClose={() => setEditingItem(null)}
-          onSave={handleSaveEdit}
+          item={editingItem} // this is the item object itself, to be edited. 
+          onClose={() => setEditingItem(null)} // when close button clicked in modal, editingItem is set to null. Modal vanishes.
+          onSave={handleSaveEdit} // when save button clicked, handleSaveEdit() runs,
+          // which updates item in our database. 
         />
       )}
       {removingItem && (
-        <AdminConfirmModal
-          key={`${removingItem.type}-${removingItem.record.id ?? removingItem.record.review_id}`}
+        <AdminConfirmModal 
           item={removingItem}
-          onCancel={() => setRemovingItem(null)}
-          onConfirm={handleConfirmRemove}
+          onCancel={() => setRemovingItem(null)} // when cancel button clicked in modal, removingItem is set to null. 
+          // Modal vanishes.
+          onConfirm={handleConfirmRemove} // when save button clicked, handleConfirmRemove() runs,
+          // which removes item from our database.
         />
       )}
     </main>

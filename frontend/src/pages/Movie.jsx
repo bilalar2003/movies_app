@@ -16,7 +16,7 @@ function Movie() {
     const [loading, setLoading] = useState(true) // state to show if movie details are being loaded or not
     // default to true 
     const [errorMessage, setErrorMessage] = useState('') // same as before. 
-    const [reviewErrorMessage, setReviewErrorMessage] = useState('')
+    const [reviewErrorMessage, setReviewErrorMessage] = useState('') // state to hold error msg if review submission failed.
     const [rating, setRating] = useState(0) // state to hold rating set by user for the movie's review 
     const [review, setReview] = useState('') // state to hold review string entered by user in their review
     // default to empty 
@@ -27,7 +27,7 @@ function Movie() {
     const apiPrefix = '/api/movies/'
 
     // to scroll up to top of page when first accessed
-      useEffect(() => {
+    useEffect(() => {
         window.scrollTo(0, 0)
     }, [])
     // window is the browser’s global object,
@@ -51,7 +51,8 @@ function Movie() {
     // ie runs when submittedReview state's value updates 
     // note that if new value of state is same as old one, the effect won't run 
 
-    useEffect(() => {
+    useEffect(() => { // this useEffect is used to display the error message for review submission for 5 seconds, 
+    // if any error occurs.
         if (!reviewErrorMessage) {
             return undefined
         }
@@ -103,7 +104,7 @@ function Movie() {
         return () => {
             isCurrent = false // set effect process as complete/inactive
         }
-    }, [id, navigate]) // this effect re-runs on movie id change and accessing the page 
+    }, []) // this effect re-runs on movie id change and accessing the page 
 
     const handleReviewSubmit = async (event) => {
         event.preventDefault() // prevent browser's default behavior to reload page upon form submission 
@@ -154,7 +155,8 @@ function Movie() {
                     {submittedReview}
                 </div>
             )}
-            {reviewErrorMessage && (
+            {reviewErrorMessage && ( // shows error msg when review submission fails
+            // eg user has already submitted a review for the movie, or server error, or session expired.
                 <div className="alert alert-error review-error-notification" role="alert" aria-live="assertive">
                     {reviewErrorMessage}
                 </div>
