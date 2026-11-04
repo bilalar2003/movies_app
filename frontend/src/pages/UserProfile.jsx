@@ -50,7 +50,7 @@ function UserProfile() {
     return () => {
       isCurrent = false// mark useEffect as complete 
     }
-  }, [navigate]) // the useEffect runs when we access this page 
+  }, []) // the useEffect runs when we access this page 
 
   const handleFavoriteRemoval = async (movie) => {
     if (updatingFavoriteId === movie.id) { // guard for checking if movie fave update is already in process,
@@ -134,7 +134,7 @@ function UserProfile() {
                 <p className="movies-state profile-empty-state">You have not saved any favorite movies yet.</p>
               ) : (
                 <div className="movie-list" aria-label="Favorite movies">
-                  {favorites.map((movie, index) => ( // map all movie favourites on display 
+                  {favorites.map((movie, index) => ( // map all movie favourites on display
                     <div
                       className="movie-row"
                       key={movie.id}

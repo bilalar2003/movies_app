@@ -222,6 +222,8 @@ export async function handleUserRoutes(req, res, url) { // this is the router in
 
   // User endpoint for adding/removing a movie as user's favourite
   if (new RegExp(`^${apiPrefix}favorites/\\d+$`).test(url.pathname)) {
+    // It checks that the URL path is exactly apiPrefix + favorites/,
+    // followed by one or more digits and nothing else (e.g. /api/favorites/42 is valid)
     if (req.method === 'PUT' || req.method === 'DELETE')
       await handleFavoriteToggle(req, res, url, req.method === 'PUT')
     return true // same. 

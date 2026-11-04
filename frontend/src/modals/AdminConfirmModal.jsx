@@ -1,15 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
 function AdminConfirmModal({ item, onCancel, onConfirm }) {
-  const [isClosing, setIsClosing] = useState(false)
-  const [isConfirmed, setIsConfirmed] = useState(false)
-  const itemLabel = item.type === 'user' ? 'user' : item.type === 'movie' ? 'movie' : 'review'
-  const itemName = item.type === 'user'
-    ? item.record.name
-    : item.type === 'movie'
-      ? item.record.title
-      : item.record.movie_title
+  // Closing and confirmation callbacks run immediately, so no state is needed.
+  const itemLabel = item.type === 'user' ? 'user' : item.type === 'movie' ? 'movie' : 'review' // set itemLabel for text display
+  // modal based on item type.
+  const itemName = item.type === 'user' ? item.record.name : item.type === 'movie' ? item.record.title : item.record.movie_title
 
   useEffect(() => {
     const scrollY = window.scrollY
@@ -30,7 +26,7 @@ function AdminConfirmModal({ item, onCancel, onConfirm }) {
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        setIsClosing(true)
+        onCancel()
       }
     }
 
@@ -41,33 +37,18 @@ function AdminConfirmModal({ item, onCancel, onConfirm }) {
       document.removeEventListener('keydown', handleKeyDown)
       window.scrollTo(0, scrollY)
     }
-  }, [])
+  }, [onCancel])
 
-  const closeModal = () => setIsClosing(true)
-  const confirmRemoval = () => {
-    setIsConfirmed(true)
-    setIsClosing(true)
-  }
-
-  const message = item.type === 'user'
+  const message = item.type === 'user' // if user type, then display user-specific msg,
     ? 'Are you sure you want to remove this user from the app? All associated data will be erased.'
-    : `Are you sure you want to remove this ${itemLabel}?`
+    : `Are you sure you want to remove this ${itemLabel}?` // else, show generic msg for movie/review removal.
 
   return createPortal(
     <div
-      className={`admin-edit-overlay admin-confirm-overlay${isClosing ? ' is-closing' : ''}`}
-      onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget && event.animationName === 'admin-edit-fade-out') {
-          if (isConfirmed) {
-            onConfirm()
-          } else {
-            onCancel()
-          }
-        }
-      }}
+      className="admin-edit-overlay admin-confirm-overlay"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !isClosing) {
-          closeModal()
+        if (event.target === event.currentTarget) {
+          onCancel() // if user clicks outside the modal, close it immediately.
         }
       }}
     >
@@ -86,7 +67,7 @@ function AdminConfirmModal({ item, onCancel, onConfirm }) {
             className="admin-edit-close"
             type="button"
             aria-label="Close confirmation dialog"
-            onClick={closeModal}
+            onClick={onCancel} // if user clicks the close button, close it immediately
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m6 6 12 12M18 6 6 18" />
@@ -98,11 +79,11 @@ function AdminConfirmModal({ item, onCancel, onConfirm }) {
         {itemName && <p className="admin-confirm-item-name">{itemName}</p>}
 
         <footer className="admin-edit-footer admin-confirm-footer">
-          <button className="admin-edit-cancel" type="button" onClick={closeModal}>
+          <button className="admin-edit-cancel" type="button" onClick={onCancel}> {/* if user clicks the cancel button, close it immediately */ }
             Discard
           </button>
-          <button className="admin-confirm-remove" type="button" onClick={confirmRemoval}>
-            Confirm
+          <button className="admin-confirm-remove" type="button" onClick={onConfirm}>
+            Confirm {/* if user clicks the confirm button, call onConfirm to proceed with the removal */ }
           </button>
         </footer>
       </section>

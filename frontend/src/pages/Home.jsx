@@ -59,6 +59,8 @@ function Home() {
 
   const handleFavoriteToggle = async (event, movie) => {
     event.stopPropagation() // stops click from passing up to parent
+    // stops the click event from bubbling up to parent elements,
+    // so clicking the heart toggles the favorite without also triggering the row’s onClick that navigates to the movie page.
     // Without it, clicking the heart toggles the favorite 
     // and then the click also reaches the row and opens the movie page; 
     // with it, the click stops at the heart, so only the favorite toggles.
@@ -114,7 +116,7 @@ function Home() {
     } //contains() returns true when the click was inside the menu, so ! flips it to “the click was outside”
 
     document.addEventListener('mousedown', closeProfileMenu) // add event listener when mouse is clicked down, 
-    // to close profile menu when user clicks outside of it.
+    // to close profile menu when user clicks outside of the menu.
     //IMP: 'mousedown' is eventType, and closeProfileMenu is the eventHandler.
     return () => document.removeEventListener('mousedown', closeProfileMenu)
     // above removes the event listener when component unmounts, to prevent memory leaks.
@@ -126,7 +128,7 @@ function Home() {
   // if so, it closes the profile menu 
   // by setting isProfileMenuOpen state to false.
 
-  useLayoutEffect(() => { // this runs when movies state changes (the page re-renders and this useEffect runs)
+  useEffect(() => { // this runs when movies state changes (the page re-renders and this useEffect runs)
     // meaning when user navigates between pages, and new movies are loaded.
     if (scrollPositionRef.current !== null) { // checks if scroll ref holds any value. 
       window.scrollTo(0, scrollPositionRef.current)
@@ -141,7 +143,7 @@ function Home() {
   }, [movies]) 
 
   useEffect(() => { // this useEffect() runs when Home.jsx page is accessed.
-    let isCurrent = true // this prevents an old movie request from changing page
+    let isCurrent = true // this prevents an old movie-list request from changing page
     // If you go to another page while movies are still loading, 
     // it stops that old request from updating Home afterward.
 
@@ -188,7 +190,7 @@ function Home() {
       // marking the useEffect as inactive. 
       isCurrent = false
     }
-  }, [navigate, page])
+  }, [page])
 
   return (
     <main className="movies-page">
@@ -223,7 +225,7 @@ function Home() {
                     View Profile
                   </button>
                   <button type="button" role="menuitem" onClick={handleLogout} disabled={isLoggingOut}>
-                    {isLoggingOut ? 'Logging out...' : 'Log Out'}
+                    {isLoggingOut ? 'Logging out...' : 'Log Out'} {/*disabled means button is disabled when isLoggingOut is true*/}
                   </button> {/*When above button is clicked, isLoggingOut is set to true*/}
                   {/* and the logout function is called*/}
                 </div>
@@ -247,12 +249,7 @@ function Home() {
                   role="link"
                   tabIndex="0"
                   onClick={() => navigate(`/movies/${movie.id}`)}
-                  // onKeyDown={(event) => {
-                  //   if (event.key === 'Enter' || event.key === ' ') {
-                  //     event.preventDefault()
-                  //     navigate(`/movies/${movie.id}`)
-                  //   }
-                  // }}
+                  
                 >
                   <span className="movie-number">{String(pageOffset + index + 1).padStart(2, '0')}</span>
                   <span className="movie-main">

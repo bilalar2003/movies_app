@@ -65,7 +65,7 @@ const server = http.createServer(async (req, res) => {
   // Returning control to browser. 
 
   if (method === 'OPTIONS') {
-    res.writeHead(204); // 204 is No Content, ie req. is successful with no data to send back as response.
+    res.writeHead(204); // 204: No Content, ie req. is successful with no data to send back as response.
     res.end();
     return;
   }
@@ -104,17 +104,17 @@ const server = http.createServer(async (req, res) => {
 
         // NOTE: HTTP transmits data only in text,
         // So stringify() converts our req./res. object's 'BODY' into JSON string.
-        // e.g for body of login request, the JSON string will be: 
+        // e.g: for body of login request, the JSON string will be: 
         // {"email":"123@example.com","password":"12345"} 
 
         // Below is data validation:
-        const normalizedName = String(name ?? '').trim() 
+        const normalizedName = String(name ?? '').trim()
         // ?? means to keep value on its left if variable isn't missing, else use right one.
         const normalizedEmail = String(email ?? '').trim().toLowerCase()
         const normalizedPassword = String(password ?? '')
         // trim() removes spaces from start & end of string.
         // Note: we use String() to confirm the name, email, password are in string data type.
-        // This is as user can send a number or a list instead. 
+        // This is as user can send a number or a list instead.
 
         if (!normalizedName || !normalizedEmail || !normalizedPassword) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -145,7 +145,7 @@ const server = http.createServer(async (req, res) => {
         // as SQL and values are seperately sent to DB,
         // where values are then plugged in as plain data
         // so input like ' OR 1=1 --' will be treated as email string,
-        // instead of an operation. 
+        // instead of an operation.
         if (existingUser.rows.length > 0) {
           res.writeHead(409, { 'Content-Type': 'application/json' });
           // 409 Conflict: means request couldn't be completed due to duplicate resource
@@ -200,8 +200,8 @@ const server = http.createServer(async (req, res) => {
         const parsed = body ? JSON.parse(body) : {};
         const { email, password } = parsed;
 
-        const normalizedEmail = String(email).trim().toLowerCase();
-        const normalizedPassword = String(password);
+        const normalizedEmail = String(email ?? '').trim().toLowerCase();
+        const normalizedPassword = String(password ?? '');
 
         if (!normalizedEmail || !normalizedPassword) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -266,7 +266,7 @@ const server = http.createServer(async (req, res) => {
 
         res.setHeader('Set-Cookie', `refreshToken=${refreshToken}; HttpOnly; Path=/api/refresh; Max-Age=604800; SameSite=Lax`)
         // above, setHeader sets an http response header,
-        // 'Set-Cookie' tells browser to store a cookie in response objects. 
+        // 'Set-Cookie' tells browser to store a cookie in this response object. 
         // refreshToken: this line sets cookie name and its value (refreshToken).
         // HttpOnly: Prevents JavaScript from accessing the cookie.
         // Path=/api/refresh: Sends the cookie only to requests whose URL path matches '/api/refresh'
