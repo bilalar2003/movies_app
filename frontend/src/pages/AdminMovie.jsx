@@ -60,7 +60,7 @@ function AdminMovie() {
     return () => {
       isCurrent = false
     }
-  }, []) // effect runs once when page first mounts
+  }, [id, navigate]) // reload details if the movie ID changes
 
   return (
     <main className="movie-page admin-page">

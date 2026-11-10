@@ -190,7 +190,7 @@ function Home() {
       // marking the useEffect as inactive. 
       isCurrent = false
     }
-  }, [page])
+  }, [page, navigate])
 
   return (
     <main className="movies-page">

@@ -104,7 +104,7 @@ function Movie() {
         return () => {
             isCurrent = false // set effect process as complete/inactive
         }
-    }, []) // this effect re-runs on movie id change and accessing the page 
+    }, [id, navigate]) // this effect re-runs on movie id change and accessing the page
 
     const handleReviewSubmit = async (event) => {
         event.preventDefault() // prevent browser's default behavior to reload page upon form submission 
