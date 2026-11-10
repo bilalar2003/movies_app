@@ -179,7 +179,7 @@ const AdminHome=() => {
     return () => {
       isCurrent = false // mark effect as inactive 
     }
-  }, [moviePage]) // effect runs when moviePage changes.
+  }, [moviePage, navigate]) // effect runs when moviePage changes.
 
   const changeMoviePage = (direction) => { // eventListener function, runs upon page change click. direction is parameter,
     // that holds values -1 or 1, respecitvely indicating to move to prev. & next page. 

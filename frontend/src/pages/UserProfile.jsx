@@ -50,7 +50,7 @@ function UserProfile() {
     return () => {
       isCurrent = false// mark useEffect as complete 
     }
-  }, []) // the useEffect runs when we access this page 
+  }, [navigate]) // the useEffect runs when we access this page
 
   const handleFavoriteRemoval = async (movie) => {
     if (updatingFavoriteId === movie.id) { // guard for checking if movie fave update is already in process,
