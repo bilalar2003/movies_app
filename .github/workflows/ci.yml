@@ -1,62 +1,75 @@
-name: CI  # name of our workflow, shown in GitHub.
+name: CI # name of our workflow, shown in GitHub.
 
-on:  # events that trigger this workflow.
-  push:  # run it on every push.
-  pull_request:  # run it on every pull request.
+on: # events that trigger this workflow.
+  push: # run it on every push.
+  pull_request: # run it on every pull request.
 
 permissions: # limit the workflow's repo access
-  contents: read  # allow workflow to only read the repo contents.
+  contents: read # allow workflow to only read the repo contents.
 
-jobs:  # list of jobs to run.
-  frontend:  # checks frontend.
-    runs-on: ubuntu-latest  # run on fresh ubuntu machine.
-    steps:  # steps this job runs, in order.
+jobs: # list of jobs to run.
+  frontend: # checks frontend.
+    runs-on: ubuntu-latest # run on fresh ubuntu machine.
+    steps: # steps this job runs, in order.
       - name: Check Out Repository
-        uses: actions/checkout@v7  # download your repo code,
+        uses: actions/checkout@v7 # download your repo code,
 
       - name: Set Up NodeJS
-        uses: actions/setup-node@v7  # install Node.js,
-        with:  # settings for this step.
-          node-version: 22  # use Node version 22
-          cache: npm  # cache npm packages for speed
-          cache-dependency-path: frontend/package-lock.json  # cache key file, changes when dependencies change
+        uses: actions/setup-node@v7 # install Node.js,
+        with: # settings for this step.
+          node-version: 22 # use Node version 22
+          cache: npm # cache npm packages for speed
+          cache-dependency-path: frontend/package-lock.json # cache key file, changes when dependencies change
 
       - name: Install Frontend Dependencies
-        run: npm ci  # install exact packages from lock file
-        working-directory: frontend  # run inside the frontend folder
+        run: npm ci # install exact packages from lock file
+        working-directory: frontend # run inside the frontend folder
 
       - name: Lint Frontend
-        run: npm run lint  # check code style and errors
-        working-directory: frontend  # run inside frontend folder
+        run: npm run lint # check code style and errors
+        working-directory: frontend # run inside frontend folder
 
       - name: Build Frontend
-        run: npm run build  # build frontend to check it compiles
-        working-directory: frontend  # run inside frontend folder
+        run: npm run build # build frontend to check it compiles
+        working-directory: frontend # run inside frontend folder
 
-  backend:  # job that checks backend
-    runs-on: ubuntu-latest  # run on fresh ubuntu machine
-    steps:  # steps to run, in order
+  backend: # job that checks backend
+    runs-on: ubuntu-latest # run on fresh ubuntu machine
+    steps: # steps to run, in order
       - name: Check out Repository
-        uses: actions/checkout@v7  # download repo code
+        uses: actions/checkout@v7 # download repo code
 
       - name: Set Up NodeJS
-        uses: actions/setup-node@v7  # install Node.js
-        with:  # settings for this step
-          node-version: 22  # use Node version 22
-          cache: npm  # cache npm packages for speed
-          cache-dependency-path: backend/package-lock.json  # cache key file, changes when dependencies change
+        uses: actions/setup-node@v7 # install Node.js
+        with: # settings for this step
+          node-version: 22 # use Node version 22
+          cache: npm # cache npm packages for speed
+          cache-dependency-path: backend/package-lock.json # cache key file, changes when dependencies change
 
       - name: Install Backend Dependencies
-        run: npm ci  # install exact packages from lock file
-        working-directory: backend  # run inside backend folder
+        run: npm ci # install exact packages from lock file
+        working-directory: backend # run inside backend folder
 
       - name: Run Backend Tests
-        run: npm test  # run backend tests
-        working-directory: backend  # run inside backend folder
+        run: npm test # run backend tests
+        working-directory: backend # run inside backend folder
 
-      - name: Check JavaScript Syntax  # label shown for this step
-        working-directory: backend  # run inside backend folder
-        run: find . -path './node_modules' -prune -o -name '*.js' -print0 | xargs -0 -n1 node --check  # find all .js files (skip node_modules) and check each for syntax errors
+      - name: Check JavaScript Syntax # label shown for this step
+        working-directory: backend # run inside backend folder
+        run: find . -path './node_modules' -prune -o -name '*.js' -print0 | xargs -0 -n1 node --check # find all .js files (skip node_modules) and check each for syntax errors
+
+  deploy:
+    needs: [frontend, backend] # run this job after frontend and backend jobs finish
+    if: (github.event_name == 'push' || github.event_name == 'pull_request') && github.ref == 'refs/heads/main' # this job runs only if the event is a push or PR, to main branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploys
+        env:
+          BACKEND_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }} # secret for backend deploy hook, used to trigger deploy on Render
+          FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }} # secret for frontend deploy hook, used to trigger deploy on Render
+        run: | # this is used to trigger the deploys on Render for both backend and frontend
+          curl --fail --silent --show-error --request POST "$BACKEND_HOOK"
+          curl --fail --silent --show-error --request POST "$FRONTEND_HOOK"
 
 # NOTE: The workflow runs npm ci in backend job,
 # that runs 'npm test'. This in turn runs 'node --test',
