@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:4000'
+export const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/+$/, '')
 const apiPrefix = '/api/'
 
 export async function refreshAccessToken() { // this function just calls the api/refresh API on server 

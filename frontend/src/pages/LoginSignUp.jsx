@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_URL } from '../services/api'
 import '../App.css'
 
 const initialForm = { // Initial fields object used by login & signup forms.
@@ -13,7 +14,7 @@ function LoginSignup() {
   const [form, setForm] = useState(initialForm) // state variable to hold form input values, initialized with initialForm object.
   const [successMessage, setSuccessMessage] = useState('') // state variable to hold success msg. after login/signup.
   const [errorMessage, setErrorMessage] = useState('') // state to hold error msg. after login/signup.
-  const ApiUrl = 'http://localhost:4000/api'
+  const ApiUrl = `${API_URL}/api`
 
   // this is an event handler function.
   const handleChange = (event) => { // the event parameter is an object 

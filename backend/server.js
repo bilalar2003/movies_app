@@ -27,6 +27,10 @@ const methodColors = {
 const PORT = process.env.PORT || 5000;
 const ACCESS_SECRET_KEY = process.env.ACCESS_SECRET_KEY
 const REFRESH_SECRET_KEY = process.env.REFRESH_SECRET_KEY
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
+const refreshCookieAttributes = process.env.NODE_ENV === 'production'
+  ? 'SameSite=None; Secure'
+  : 'SameSite=Lax'
 
 const ApiPrefix = '/api/'
 
@@ -47,7 +51,7 @@ const server = http.createServer(async (req, res) => {
   // Below is setting metadata for our response (that we send back to frontend) 
   // to allow cross-origin requests (CORS)
 
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173'); // requests only from this url will be entertained, * would mean from any url.
+  res.setHeader('Access-Control-Allow-Origin', FRONTEND_URL); // requests only from this url will be entertained, * would mean from any url.
   res.setHeader('Access-Control-Allow-Credentials', 'true'); // tells browser to allow sending cookies in the response object.
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS'); // sets HTTP methods client can include in its requests.
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // allows client to send content-type and authorization headers in their requests.
@@ -264,7 +268,7 @@ const server = http.createServer(async (req, res) => {
         // Step 3: If someone changes the token's data, 
         // the signature no longer matches, so verification fails and the server rejects the token.
 
-        res.setHeader('Set-Cookie', `refreshToken=${refreshToken}; HttpOnly; Path=/api/refresh; Max-Age=604800; SameSite=Lax`)
+        res.setHeader('Set-Cookie', `refreshToken=${refreshToken}; HttpOnly; Path=/api/refresh; Max-Age=604800; ${refreshCookieAttributes}`)
         // above, setHeader sets an http response header,
         // 'Set-Cookie' tells browser to store a cookie in this response object. 
         // refreshToken: this line sets cookie name and its value (refreshToken).
@@ -342,7 +346,7 @@ const server = http.createServer(async (req, res) => {
   if (method === 'POST' && url.pathname === `${ApiPrefix}logout`) {
     logRequest(req, url)
 
-    res.setHeader('Set-Cookie', 'refreshToken=; HttpOnly; Path=/api/refresh; Max-Age=0; SameSite=Lax'); // this line expires the existing refreshToken.
+    res.setHeader('Set-Cookie', `refreshToken=; HttpOnly; Path=/api/refresh; Max-Age=0; ${refreshCookieAttributes}`); // this line expires the existing refreshToken.
     res.writeHead(204); // 204 No Content: means request succeeded but server has no content to send back.
     res.end();
     return;
